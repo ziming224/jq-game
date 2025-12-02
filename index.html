@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>羊咩咩</title>
+  <style>
+    body {
+      margin: 0;
+      display: block;
+      background-color: oklab(40.875% -0.00322 -0.07534);
+    }
+
+
+
+    #game {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+
+      height: 1536px;
+      width: 1024px;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      background: url('./images/BG1.png') no-repeat center;
+      background-size: contain;
+      overflow: hidden;
+    }
+
+
+    #text-score {
+      position: absolute;
+      width: 130px;
+      height: 70px;
+      top: 0px;
+      left: 0px;
+      background-color: #28287f;
+      font-size: 50px;
+      color: white;
+      text-align: center;
+      line-height: 70px;
+      border-radius: 50px;
+      z-index: 10;
+    }
+
+    #start {
+      width: 150px;
+      height: 70px;
+      margin: auto;
+      background: hsl(60, 49%, 73%);
+      color: hsl(39, 100%, 31%);
+      font-size: 35px;
+      border-radius: 50px;
+      margin: auto;
+      border: none;
+      position: absolute;
+      cursor: pointer;
+    }
+
+    #start:hover {
+      background-color: orange;
+    }
+
+    .sheep,
+    .wolf {
+      width: 226px;
+      height: 154px;
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(500px);
+      z-index: 1;
+      background: none;
+      user-select: none;
+      -webkit-user-drag: none;
+      cursor: pointer;
+
+    }
+
+    .wolf {
+      height: 236px
+    }
+
+    @keyframes jumpSheep {
+      0% {
+        transform: translateX(310px) translateY(-650px) rotate(0deg);
+      }
+
+
+      50% {
+        transform: translateX(-100px) translateY(-700px) rotate(-15deg);
+      }
+
+
+      100% {
+        transform: translateX(-500px) translateY(400px) rotate(-20deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <span id="text-score">0</span>
+  <div id="game">
+    <input type="button" value="開始" id="start">
+
+  </div>
+
+
+
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js'
+    integrity='sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=='
+    crossorigin='anonymous'></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+  <script>
+    // 分數
+    let score = 0
+    // 儲存產生羊/狼的計時器
+    let sheepInterval
+    // 儲存未操作超時的計時器
+    let inactivityTimer
+
+
+    $('#start').on('click', function () {
+      //隱藏按鈕
+      $(this).hide()
+      score = 0
+      $('#text-score').text(score)
+      // 重設遊戲時間
+      // 每 2 秒產生一隻羊（
+      sheepInterval = setInterval(spawnSheep, 2000)
+      // 啟動未點擊自動結束的倒數
+      resetInactivityTimer()
+    })
+    // 清除現有計時器，設置20 秒沒動作就結束
+    function resetInactivityTimer() {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        endGame(`${score} 隻羊陪你入睡`);
+      }, 20000);
+    }
+
+
+    function spawnSheep() {
+      // 0.6 的機率產生羊，0.4 的機率產生狼
+      const isSheep = Math.random() < 0.6;
+      // 用 $animal 是為了清楚標示該變數是 jQuery 物件
+      const $animal = $('<img>');
+      if (isSheep) {
+        $animal.attr('src', './images/sheep.png');
+        $animal.addClass('sheep');
+      } else {
+        $animal.attr('src', './images/bad.png');
+        $animal.addClass('wolf');
+      }
+
+      $animal.css('animation', 'jumpSheep 3s ease-in-out forwards');
+      $('#game').append($animal);
+
+      setTimeout(() => {
+        $animal.remove();
+      }, 4000);
+    }
+
+
+    // 羊&狼計分音效
+    $('#game').on('click', '.sheep, .wolf', function () {
+      const isSheep = $(this).hasClass('sheep')
+
+      if (isSheep) {
+        score++
+        $('#text-score').text(score)
+
+        const sheepSound = new Audio('./sheep-122256.mp3')
+        sheepSound.play()
+
+      } else {
+        // 防止負分
+        score = Math.max(0, score - 1)
+        $('#text-score').text(score)
+
+        const wolfSound = new Audio('./fart-83471.mp3')
+        wolfSound.play()
+      }
+
+      $(this).remove()
+      resetInactivityTimer();
+
+
+      if (score >= 100) {
+        endGame('羊群累到睡著了 Zzz');
+      }
+    })
+
+
+    function endGame(message) {
+      clearInterval(sheepInterval);
+      clearTimeout(inactivityTimer);
+      $('.sheep, .wolf').remove();
+
+      Swal.fire({
+        text: message,
+        confirmButtonText: '確定',
+      }).then(() => {
+        score = 0
+        // 將元素內容設為變數score
+        $('#text-score').text(score);
+        $('#start').show();
+
+      });
+    }
+
+  </script>
+
+</body>
+
+</html>
